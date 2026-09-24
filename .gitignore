@@ -1,0 +1,22 @@
+# Build directories
+build/
+bin/
+*.exe
+*.o
+*.obj
+*.lib
+*.dll
+*.so
+*.out
+
+# Go binaries
+control-plane/gateway-bin
+control-plane/scaler-bin
+
+# IDE and AI Agents (bỏ qua không commit)
+.vscode/
+.antigravity/
+
+# OS generated
+.DS_Store
+Thumbs.db
