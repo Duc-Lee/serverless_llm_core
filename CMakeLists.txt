@@ -1,30 +1,21 @@
 cmake_minimum_required(VERSION 3.18)
-project(HydraServerless LANGUAGES CXX CUDA)
+project(HydraServerless LANGUAGES C CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CUDA_STANDARD 20)
+set(CMAKE_CUDA_STANDARD 17)
 
-find_package(CUDAToolkit REQUIRED)
+find_package(CUDA REQUIRED)
+include_directories(${CUDA_INCLUDE_DIRS} vmm/include)
 
-include_directories(vmm/include)
-include_directories(pipeline/include)
+# Tùy chọn cờ biên dịch thư viện Driver API
+set(CUDA_DRIVER_LIBRARY /usr/local/cuda/lib64/stubs/libcuda.so)
 
-add_library(vmm_arena STATIC vmm/src/vmm_arena.cpp)
-target_link_libraries(vmm_arena PRIVATE CUDA::cuda_driver CUDA::cudart)
+add_executable(hydra_worker 
+    worker/src/main.cpp 
+    vmm/src/cuda_vmm.cpp
+)
+target_link_libraries(hydra_worker ${CUDA_DRIVER_LIBRARY} pthread)
 
-add_library(compute_kernels STATIC engine/dummy_llama_forward.cu)
-target_link_libraries(compute_kernels PRIVATE CUDA::cuda_driver CUDA::cudart)
-
-add_library(layer_streamer STATIC pipeline/src/layer_streamer.cpp)
-target_link_libraries(layer_streamer PRIVATE vmm_arena compute_kernels CUDA::cuda_driver CUDA::cudart)
-
-add_executable(bench_end_to_end tests/bench_end_to_end.cpp)
-target_link_libraries(bench_end_to_end PRIVATE layer_streamer vmm_arena compute_kernels CUDA::cuda_driver CUDA::cudart)
-
-add_executable(bench_vmm tests/bench_vmm.cpp)
-target_link_libraries(bench_vmm PRIVATE vmm_arena CUDA::cuda_driver CUDA::cudart)
-
-add_executable(peeker_daemon ingress/src/peeker_daemon.cpp)
-
-add_executable(hydra_worker worker/src/hydra_worker.cpp)
-target_link_libraries(hydra_worker PRIVATE vmm_arena CUDA::cuda_driver CUDA::cudart)
+# Benchmark riêng cho VMM
+add_executable(bench_vmm tests/bench_vmm.cpp vmm/src/cuda_vmm.cpp)
+target_link_libraries(bench_vmm ${CUDA_DRIVER_LIBRARY})
