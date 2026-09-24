@@ -1,8 +1,18 @@
-#include "shadow_vmm.hpp"
+#include "vmm_arena.hpp"
+#include <stdexcept>
+#include <string>
+
+#define CUDA_DRIVER_CHECK(call) \
+    do { \
+        CUresult result = call; \
+        if (result != CUDA_SUCCESS) { \
+            throw std::runtime_error("CUDA Driver API error: " + std::to_string(result)); \
+        } \
+    } while (0)
 
 namespace hydra {
 
-ShadowWorkerVMM::ShadowWorkerVMM(int device_id, size_t max_virtual_size) {
+VMMVirtualArena::VMMVirtualArena(int device_id, size_t max_virtual_size) {
     CUDA_DRIVER_CHECK(cuInit(0));
     CUDA_DRIVER_CHECK(cuDeviceGet(&device_, device_id));
     CUDA_DRIVER_CHECK(cuCtxCreate(&context_, CU_CTX_SCHED_YIELD, device_));
@@ -17,16 +27,16 @@ ShadowWorkerVMM::ShadowWorkerVMM(int device_id, size_t max_virtual_size) {
     CUDA_DRIVER_CHECK(cuMemAddressReserve(&virtual_base_ptr_, reservation_size_, 0, 0, 0));
 }
 
-ShadowWorkerVMM::~ShadowWorkerVMM() {
+VMMVirtualArena::~VMMVirtualArena() {
     CUDA_DRIVER_CHECK(cuCtxSetCurrent(context_));
-    for (auto& chunk : physical_chunks_) {
-        cuMemRelease(chunk.handle);
+    for (auto handle : physical_handles_) {
+        cuMemRelease(handle);
     }
     cuMemAddressFree(virtual_base_ptr_, reservation_size_);
     cuCtxDestroy(context_);
 }
 
-size_t ShadowWorkerVMM::allocate_physical_chunk(size_t size) {
+CUmemGenericAllocationHandle VMMVirtualArena::allocate_physical_chunk(size_t size) {
     size_t aligned_size = ((size + granularity_ - 1) / granularity_) * granularity_;
     CUmemAllocationProp prop = {};
     prop.type = CU_MEM_ALLOCATION_TYPE_PINNED;
@@ -35,26 +45,23 @@ size_t ShadowWorkerVMM::allocate_physical_chunk(size_t size) {
     
     CUmemGenericAllocationHandle handle;
     CUDA_DRIVER_CHECK(cuMemCreate(&handle, aligned_size, &prop, 0));
-    physical_chunks_.push_back({handle, aligned_size});
-    return physical_chunks_.size() - 1;
+    physical_handles_.push_back(handle);
+    return handle;
 }
 
-void ShadowWorkerVMM::map_chunk_to_virtual(size_t chunk_id) {
-    if (chunk_id >= physical_chunks_.size()) throw std::out_of_range("Invalid chunk ID");
-    const auto& chunk = physical_chunks_[chunk_id];
+void VMMVirtualArena::swap_layer_chunk(size_t virtual_offset, CUmemGenericAllocationHandle handle, size_t size) {
+    size_t aligned_size = ((size + granularity_ - 1) / granularity_) * granularity_;
+    CUdeviceptr target_ptr = virtual_base_ptr_ + virtual_offset;
     
-    CUDA_DRIVER_CHECK(cuMemMap(virtual_base_ptr_, chunk.size, 0, chunk.handle, 0));
+    // Atomically unmap existing and map new
+    CUDA_DRIVER_CHECK(cuMemUnmap(target_ptr, aligned_size));
+    CUDA_DRIVER_CHECK(cuMemMap(target_ptr, aligned_size, 0, handle, 0));
     
     CUmemAccessDesc access_desc = {};
     access_desc.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
     access_desc.location.id = device_;
     access_desc.flags = CU_MEM_ACCESS_FLAGS_PROT_READWRITE;
-    
-    CUDA_DRIVER_CHECK(cuMemSetAccess(virtual_base_ptr_, chunk.size, &access_desc, 1));
-}
-
-void ShadowWorkerVMM::unmap_virtual() {
-    CUDA_DRIVER_CHECK(cuMemUnmap(virtual_base_ptr_, reservation_size_));
+    CUDA_DRIVER_CHECK(cuMemSetAccess(target_ptr, aligned_size, &access_desc, 1));
 }
 
 } // namespace hydra
