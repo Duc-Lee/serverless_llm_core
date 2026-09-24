@@ -1,0 +1,28 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: hydratenants.serverless.hydra.io
+spec:
+  group: serverless.hydra.io
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                modelName:
+                  type: string
+                weightPath:
+                  type: string
+                idleTimeoutSeconds:
+                  type: integer
+  scope: Namespaced
+  names:
+    plural: hydratenants
+    singular: hydratenant
+    kind: HydraTenant

@@ -21,4 +21,10 @@ target_link_libraries(layer_streamer PRIVATE vmm_arena compute_kernels CUDA::cud
 add_executable(bench_end_to_end tests/bench_end_to_end.cpp)
 target_link_libraries(bench_end_to_end PRIVATE layer_streamer vmm_arena compute_kernels CUDA::cuda_driver CUDA::cudart)
 
+add_executable(bench_vmm tests/bench_vmm.cpp)
+target_link_libraries(bench_vmm PRIVATE vmm_arena CUDA::cuda_driver CUDA::cudart)
+
 add_executable(peeker_daemon ingress/src/peeker_daemon.cpp)
+
+add_executable(hydra_worker worker/src/hydra_worker.cpp)
+target_link_libraries(hydra_worker PRIVATE vmm_arena CUDA::cuda_driver CUDA::cudart)
