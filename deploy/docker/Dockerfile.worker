@@ -1,6 +1,8 @@
 FROM nvidia/cuda:12.1.0-devel-ubuntu22.04
 
-RUN apt-get update && apt-get install -y cmake g++ libbpf-dev
+# Cài đặt CUDA Driver development headers và GPUDirect Storage (libcufile)
+RUN apt-get update && apt-get install -y cmake g++ libbpf-dev libcufile-dev-12-1
+
 WORKDIR /app
 COPY . .
 RUN cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build
