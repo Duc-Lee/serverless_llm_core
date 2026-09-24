@@ -27,3 +27,4 @@ private:
     CUmemAccessDesc access_desc_;
     std::vector<CUmemGenericAllocationHandle> allocation_handles_;
 };
+// T?ng GPU Core
