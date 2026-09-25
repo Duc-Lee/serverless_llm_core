@@ -8,26 +8,26 @@ Nền tảng suy luận Serverless tức thời (Sub-millisecond Scale-to-Zero) 
 graph TD
     %% Tầng Ingress & API
     subgraph "Tầng 3: Ingress / Gateway (Python + eBPF)"
-        Client[Client Requests] --> Gateway[FastAPI Gateway\n(ingress/src/gateway.py)]
+        Client["Client Requests"] --> Gateway["FastAPI Gateway<br/>(ingress/src/gateway.py)"]
         Gateway -- "Request Buffer" --> Gateway
     end
 
     %% Tầng Điều Phối (Control Plane)
     subgraph "Tầng 2: Global Control Plane (Go)"
-        Gateway -- "Check VRAM Availability" --> Scheduler[VRAM-Aware Global Scheduler\n(control-plane/hydra_controller.go)]
-        Scheduler -- "Quản lý Bảng băm VRAM toàn cụm" --> PageTable[(Global Page Table)]
+        Gateway -- "Check VRAM Availability" --> Scheduler["VRAM-Aware Global Scheduler<br/>(control-plane/hydra_controller.go)"]
+        Scheduler -- "Quản lý Bảng băm VRAM toàn cụm" --> PageTable[("Global Page Table")]
     end
 
     %% Tầng Thực Thi & GPU (Data Plane)
     subgraph "Tầng 1: Perpetual Shadow Worker (C++ / CUDA)"
-        Scheduler -- "1. RPC Warm-up Layer 0\n(Bypass K8s Pod Lifecycle)" --> DaemonSet[K8s DaemonSet Worker\n(deploy/k8s/hydra-daemonset.yaml)]
-        Gateway -- "2. Dispatch Token < 1ms\n(Direct Socket)" --> DaemonSet
+        Scheduler -- "1. RPC Warm-up Layer 0<br/>(Bypass K8s Pod Lifecycle)" --> DaemonSet["K8s DaemonSet Worker<br/>(deploy/k8s/hydra-daemonset.yaml)"]
+        Gateway -- "2. Dispatch Token < 1ms<br/>(Direct Socket)" --> DaemonSet
 
         subgraph "GPU Pipeline (engine/ & vmm/)"
-            DaemonSet --> VMM[Virtual VRAM Manager\n(cuMemMap / Paged KV-Cache)]
-            VMM --> GPUDirect[Zero-Copy NVMe-oF GPUDirect\nĐọc RAW Tensors]
-            VMM --> Compute[Compute Orchestration\n(CUDA Graphs & Hardware Barriers)]
-            Compute --> Kernels[Direct Kernel Weight Addressing\n(cuBLASLt / FlashAttention)]
+            DaemonSet --> VMM["Virtual VRAM Manager<br/>(cuMemMap / Paged KV-Cache)"]
+            VMM --> GPUDirect["Zero-Copy NVMe-oF GPUDirect<br/>Đọc RAW Tensors"]
+            VMM --> Compute["Compute Orchestration<br/>(CUDA Graphs & Hardware Barriers)"]
+            Compute --> Kernels["Direct Kernel Weight Addressing<br/>(cuBLASLt / FlashAttention)"]
         end
     end
 ```
