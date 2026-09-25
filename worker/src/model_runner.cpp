@@ -8,16 +8,9 @@ ModelRunner::~ModelRunner() {
     cublasLtDestroy(cublas_handle_);
 }
 
-void ModelRunner::forward_layer_gemm(size_t weight_offset, 
-                                     half* d_input, 
-                                     half* d_output, 
-                                     int m, int n, int k, 
-                                     cudaStream_t stream) {
-    
-    // 1. Lấy địa chỉ thực của ma trận trọng số từ Virtual Address Space
+void ModelRunner::forward_layer_gemm(size_t weight_offset, half* d_input, half* d_output, int m, int n, int k, cudaStream_t stream) {
+    // truyen thang base va cong offset thay vi cudaMalloc
     half* d_weight = reinterpret_cast<half*>(vmm_.get_base_va() + weight_offset);
-
-    // 2. Chạy phép nhân ma trận d_output = d_input * d_weight
     half alpha = 1.0f;
     half beta  = 0.0f;
 
@@ -29,14 +22,7 @@ void ModelRunner::forward_layer_gemm(size_t weight_offset,
     cublasLtMatrixLayoutCreate(&bdesc, CUDA_R_16F, k, n, k);
     cublasLtMatrixLayoutCreate(&cdesc, CUDA_R_16F, n, m, n);
 
-    cublasLtMatmul(cublas_handle_, operationDesc,
-                   &alpha,
-                   d_weight, bdesc,
-                   d_input,  adesc,
-                   &beta,
-                   d_output, cdesc,
-                   d_output, cdesc,
-                   NULL, NULL, 0, stream);
+    cublasLtMatmul(cublas_handle_, operationDesc, &alpha, d_weight, bdesc, d_input, adesc, &beta, d_output, cdesc, d_output, cdesc, NULL, NULL, 0, stream);
 
     cublasLtMatrixLayoutDestroy(adesc);
     cublasLtMatrixLayoutDestroy(bdesc);
