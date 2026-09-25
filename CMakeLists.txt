@@ -12,9 +12,10 @@ set(CUDA_DRIVER_LIBRARY /usr/local/cuda/lib64/stubs/libcuda.so)
 
 add_executable(hydra_worker 
     worker/src/main.cpp 
+    worker/src/model_runner.cpp
     vmm/src/cuda_vmm.cpp
 )
-target_link_libraries(hydra_worker ${CUDA_DRIVER_LIBRARY} pthread)
+target_link_libraries(hydra_worker ${CUDA_DRIVER_LIBRARY} pthread cublas cublasLt)
 
 # Benchmark riêng cho VMM
 add_executable(bench_vmm tests/bench_vmm.cpp vmm/src/cuda_vmm.cpp)

@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: hydra-shadow-worker
+  namespace: hydra-system
+  labels:
+    app: hydra-worker
+spec:
+  selector:
+    matchLabels:
+      app: hydra-worker
+  template:
+    metadata:
+      labels:
+        app: hydra-worker
+    spec:
+      hostIPC: true
+      hostNetwork: true # Bypass K8s CNI overlay for lowest latency
+      containers:
+      - name: worker
+        image: hydra-worker:latest
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: true # Required for direct NVMe/GPUDirect access and eBPF
+        resources:
+          limits:
+            nvidia.com/gpu: "8" # Claim all GPUs on an 8x GPU node
+        volumeMounts:
+        - name: shared-nvme
+          mountPath: /mnt/nvme-of
+          readOnly: true
+        - name: dev-mem
+          mountPath: /dev/mem
+      volumes:
+      - name: shared-nvme
+        hostPath:
+          path: /mnt/shared_nvme # Point to local NVMe-oF mount on the host
+          type: DirectoryOrCreate
+      - name: dev-mem
+        hostPath:
+          path: /dev/mem
