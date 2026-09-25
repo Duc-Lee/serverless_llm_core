@@ -2,7 +2,7 @@
 
 Nền tảng suy luận Serverless tức thời (Sub-millisecond Scale-to-Zero) tối ưu hóa chi phí và tài nguyên GPU cho Mô hình Ngôn ngữ Lớn (LLM), được thiết kế để bypass hoàn toàn các giới hạn của Kubernetes và Knative trong môi trường AI.
 
-## 🏗 Sơ Đồ Kiến Trúc Hệ Thống (Hydra Global Control Plane)
+## Sơ Đồ Kiến Trúc Hệ Thống (Hydra Global Control Plane)
 
 ```mermaid
 graph TD
@@ -32,7 +32,7 @@ graph TD
     end
 ```
 
-## 🚀 Hướng Dẫn Cài Đặt & Khởi Chạy
+## Hướng Dẫn Cài Đặt & Khởi Chạy
 
 Hệ thống được chia làm 3 module chính. Bạn có thể chạy độc lập từng phần để test hoặc deploy toàn cụm bằng Kubernetes.
 
@@ -74,7 +74,7 @@ Triển khai DaemonSet Worker lên các GPU Node (yêu cầu node gắn sẵn NV
 kubectl apply -f deploy/k8s/hydra-daemonset.yaml
 ```
 
-## 🧩 Các Thành Phần Công Nghệ Lõi Đã Tích Hợp
+## Các Thành Phần Công Nghệ Lõi Đã Tích Hợp
 - **Direct Tensor Binding:** Dùng `cuMemMap` map vùng nhớ ảo mà không copy dữ liệu qua RAM.
 - **KV-Cache Virtual Paging:** Cấp phát động logical blocks cho KV-Cache, chống phân mảnh.
 - **CUDA Graph Capture:** `cudaGraphLaunch` triệt tiêu CPU launch overhead.
